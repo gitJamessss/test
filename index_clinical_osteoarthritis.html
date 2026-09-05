@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tokyo Sakura Sumida Park - Evidence-Based Hip OA Rehabilitation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #080d1a; }
+  #overlay {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 12px 18px; background: linear-gradient(180deg, rgba(8,13,26,0.88) 0%, rgba(8,13,26,0) 100%);
+    color: #fff; font-size: 14px; z-index: 10; pointer-events: none;
+  }
+  #overlay h1 { margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #f472b6; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+  #overlay p { margin: 2px 0; opacity: 0.9; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+  #debug {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 8px 14px; background: rgba(5,10,20,0.85);
+    color: #f472b6; font-size: 11px; z-index: 10; white-space: pre-line; font-family: monospace;
+  }
+</style>
+</head>
+<body>
+<div id="overlay">
+  <h1>🌸 Clinical Hip Osteoarthritis VR Guidance (OARSI/AAOS Protocol)</h1>
+  <p>Phase-Based Seated Hip Flexion & Isometric Quadriceps Stabilization • Tokyo Sumida Park</p>
+  <p>1) Host via HTTPS (GitHub Pages). 2) Open in Quest 3 Browser. 3) Tap <b>Enter VR</b>.</p>
+</div>
+<div id="debug"></div>
+
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
+import { VRButton } from "https://unpkg.com/three@0.165.0/examples/jsm/webxr/VRButton.js";
+
+const debugEl = document.getElementById('debug');
+function logDebug(msg) {
+  console.log(msg);
+  debugEl.textContent = msg;
+}
+
+logDebug("Secure context (HTTPS): " + window.isSecureContext);
+if (!window.isSecureContext) {
+  logDebug("WARNING: WebXR requires HTTPS or localhost.");
+}
+if (!('xr' in navigator)) {
+  logDebug("navigator.xr not found - use Quest Browser.");
+} else {
+  navigator.xr.isSessionSupported('immersive-vr')
+    .then(supported => logDebug("Meta Quest WebXR Ready: " + supported))
+    .catch(err => logDebug("XR support check error: " + err));
+}
+
+// =========================================================================
+// QUEST 3 OPTIMIZED WEBGL CONTEXT & RENDERER (Crisp, Fast, Zero Crash)
+// =========================================================================
+const canvas = document.createElement('canvas');
+const gl = canvas.getContext('webgl2', { xrCompatible: true, antialias: false });
+
+const renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(VRButton.createButton(renderer));
+
+// Context loss safety
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  renderer.setAnimationLoop(null);
+  logDebug("GPU Context Lost - paused safely.");
+}, false);
+canvas.addEventListener('webglcontextrestored', () => {
+  logDebug("GPU Context Restored - resuming session.");
+  renderer.setAnimationLoop(renderScene);
+}, false);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x1a2138, 0.009);
+
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 160);
+camera.position.set(0, 1.4, 0.3);
+
+// =========================================================================
+// LIGHTING: Spring Sunset Twilight in Tokyo
+// =========================================================================
+const hemiLight = new THREE.HemisphereLight(0xfce7f3, 0x1e293b, 1.25);
+scene.add(hemiLight);
+
+const sunLight = new THREE.DirectionalLight(0xfbcfe8, 1.2);
+sunLight.position.set(-10, 25, 15);
+scene.add(sunLight);
+
+const lanternLight = new THREE.PointLight(0xfef08a, 2.2, 12);
+lanternLight.position.set(-2.2, 1.8, -1.8);
+scene.add(lanternLight);
+
+const lanternLight2 = new THREE.PointLight(0xfef08a, 2.2, 12);
+lanternLight2.position.set(2.2, 1.8, -1.8);
+scene.add(lanternLight2);
+
+// =========================================================================
+// 4K PROCEDURAL SKYLINE & TOKYO SKYTREE PANORAMA (4096 x 2048 Canvas)
+// =========================================================================
+function createTokyoSakura4KSkybox() {
+  const w = 4096, h = 2048;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0.0, '#0a1128');
+  grad.addColorStop(0.32, '#1e2448');
+  grad.addColorStop(0.52, '#483d6a');
+  grad.addColorStop(0.66, '#8b5a83');
+  grad.addColorStop(0.74, '#d87093');
+  grad.addColorStop(0.80, '#f9a8d4');
+  grad.addColorStop(0.84, '#fed7aa');
+  grad.addColorStop(0.88, '#1e293b');
+  grad.addColorStop(1.0, '#09111e');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  for (let i = 0; i < 220; i++) {
+    const sx = Math.random() * w;
+    const sy = Math.random() * (h * 0.45);
+    const r = Math.random() * 2.0;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Crescent Moon
+  ctx.save();
+  ctx.translate(w * 0.28, h * 0.28);
+  ctx.fillStyle = '#fef9c3';
+  ctx.beginPath();
+  ctx.arc(0, 0, 36, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2b2a52';
+  ctx.beginPath();
+  ctx.arc(12, -6, 32, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  const horizonY = h * 0.78;
+
+  // Mount Fuji
+  ctx.save();
+  ctx.translate(w * 0.18, horizonY);
+  ctx.fillStyle = 'rgba(30, 27, 58, 0.9)';
+  ctx.beginPath();
+  ctx.moveTo(-160, 0); ctx.lineTo(-40, -110); ctx.lineTo(40, -110); ctx.lineTo(160, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255, 240, 248, 0.65)';
+  ctx.beginPath();
+  ctx.moveTo(-40, -110); ctx.lineTo(40, -110); ctx.lineTo(60, -75); ctx.lineTo(20, -85);
+  ctx.lineTo(-10, -78); ctx.lineTo(-35, -88); ctx.lineTo(-60, -75);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  // Asakusa Sensoji Pagoda
+  ctx.save();
+  ctx.translate(w * 0.48, horizonY);
+  ctx.fillStyle = '#131b2e';
+  for (let t = 0; t < 5; t++) {
+    const tw = 60 - t * 8;
+    const ty = -30 - t * 24;
+    ctx.beginPath();
+    ctx.moveTo(-tw / 2 - 8, ty);
+    ctx.quadraticCurveTo(0, ty - 6, tw / 2 + 8, ty);
+    ctx.lineTo(tw / 2, ty + 16);
+    ctx.lineTo(-tw / 2, ty + 16);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(0, -150); ctx.lineTo(0, -185); ctx.stroke();
+  ctx.restore();
+
+  // City Skyline
+  let x = 60;
+  while (x < w * 0.64) {
+    if (Math.abs(x - w * 0.48) < 50) { x += 60; continue; }
+    const bw = 50 + Math.random() * 80;
+    const bh = 100 + Math.random() * 320;
+    ctx.fillStyle = '#101626';
+    ctx.fillRect(x, horizonY - bh, bw, bh);
+
+    for (let wy = horizonY - bh + 16; wy < horizonY - 10; wy += 18) {
+      for (let wx = x + 8; wx < x + bw - 8; wx += 14) {
+        if (Math.random() > 0.35) {
+          ctx.fillStyle = Math.random() > 0.4 ? 'rgba(254,240,138,0.7)' : 'rgba(244,114,182,0.55)';
+          ctx.fillRect(wx, wy, 6, 9);
+        }
+      }
+    }
+    x += bw + 12 + Math.random() * 16;
+  }
+
+  // Tokyo Skytree
+  const skytreeX = w * 0.72;
+  const skytreeBaseY = horizonY;
+  const skytreeTotalH = 750;
+  const baseW = 120, neckW = 28;
+
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 4;
+  ctx.fillStyle = 'rgba(241,245,249,0.92)';
+  ctx.beginPath();
+  ctx.moveTo(skytreeX - baseW / 2, skytreeBaseY);
+  ctx.lineTo(skytreeX - neckW / 2, skytreeBaseY - skytreeTotalH * 0.85);
+  ctx.lineTo(skytreeX + neckW / 2, skytreeBaseY - skytreeTotalH * 0.85);
+  ctx.lineTo(skytreeX + baseW / 2, skytreeBaseY);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.8)'; ctx.lineWidth = 2.5;
+  for (let ly = skytreeBaseY - 40; ly > skytreeBaseY - skytreeTotalH * 0.8; ly -= 36) {
+    const ratio = (skytreeBaseY - ly) / (skytreeTotalH * 0.85);
+    const span = (baseW * (1 - ratio) + neckW * ratio) / 2;
+    ctx.beginPath();
+    ctx.moveTo(skytreeX - span, ly); ctx.lineTo(skytreeX + span, ly - 36);
+    ctx.moveTo(skytreeX + span, ly); ctx.lineTo(skytreeX - span, ly - 36);
+    ctx.moveTo(skytreeX - span, ly); ctx.lineTo(skytreeX + span, ly);
+    ctx.stroke();
+  }
+
+  const deck1Y = skytreeBaseY - skytreeTotalH * 0.52;
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(skytreeX - 44, deck1Y - 24, 88, 28);
+  ctx.fillStyle = '#f472b6'; ctx.fillRect(skytreeX - 42, deck1Y - 18, 84, 16);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(skytreeX - 42, deck1Y - 10, 84, 4);
+
+  const deck2Y = skytreeBaseY - skytreeTotalH * 0.70;
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(skytreeX - 32, deck2Y - 18, 64, 22);
+  ctx.fillStyle = '#f472b6'; ctx.fillRect(skytreeX - 30, deck2Y - 14, 60, 12);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(skytreeX - 30, deck2Y - 8, 60, 3);
+
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(skytreeX, skytreeBaseY - skytreeTotalH * 0.85);
+  ctx.lineTo(skytreeX, skytreeBaseY - skytreeTotalH);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath(); ctx.arc(skytreeX, skytreeBaseY - skytreeTotalH, 8, 0, Math.PI * 2); ctx.fill();
+
+  const riverGrad = ctx.createLinearGradient(0, horizonY, 0, h);
+  riverGrad.addColorStop(0.0, '#1a233a');
+  riverGrad.addColorStop(0.5, '#2e1d3b');
+  riverGrad.addColorStop(1.0, '#0b1329');
+  ctx.fillStyle = riverGrad;
+  ctx.fillRect(0, horizonY, w, h - horizonY);
+
+  ctx.fillStyle = 'rgba(244, 114, 182, 0.25)';
+  ctx.fillRect(skytreeX - 35, horizonY, 70, h - horizonY);
+
+  return c;
+}
+
+const skyTexture = new THREE.CanvasTexture(createTokyoSakura4KSkybox());
+skyTexture.colorSpace = THREE.SRGBColorSpace;
+const skyDome = new THREE.Mesh(
+  new THREE.SphereGeometry(85, 32, 24),
+  new THREE.MeshBasicMaterial({ map: skyTexture, side: THREE.BackSide })
+);
+scene.add(skyDome);
+
+// =========================================================================
+// SUMIDA RIVER WATERFRONT
+// =========================================================================
+function createRiverTexture() {
+  const s = 512;
+  const c = document.createElement('canvas');
+  c.width = s; c.height = s;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#101a2e'; ctx.fillRect(0, 0, s, s);
+
+  for (let i = 0; i < 350; i++) {
+    const y = Math.random() * s;
+    const len = 30 + Math.random() * 80;
+    const x = Math.random() * s;
+    ctx.strokeStyle = Math.random() > 0.45 ? 'rgba(244, 114, 182, 0.22)' : 'rgba(125, 211, 252, 0.16)';
+    ctx.lineWidth = 1 + Math.random() * 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y); ctx.stroke();
+  }
+  return c;
+}
+
+const riverTexture = new THREE.CanvasTexture(createRiverTexture());
+riverTexture.wrapS = riverTexture.wrapT = THREE.RepeatWrapping;
+riverTexture.repeat.set(6, 6);
+const river = new THREE.Mesh(
+  new THREE.PlaneGeometry(80, 50),
+  new THREE.MeshBasicMaterial({ map: riverTexture, transparent: true, opacity: 0.95 })
+);
+river.rotation.x = -Math.PI / 2;
+river.position.set(0, -0.06, -18);
+scene.add(river);
+
+// Yakatabune Houseboat
+function createYakatabune() {
+  const boat = new THREE.Group();
+  const hullMat = new THREE.MeshStandardMaterial({ color: 0x2b1d14, roughness: 0.7 });
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.25, 2.6), hullMat);
+  hull.position.y = 0.1;
+  boat.add(hull);
+
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.35, 1.8), new THREE.MeshStandardMaterial({ color: 0xd4c7b8, roughness: 0.6 }));
+  cabin.position.set(0, 0.38, -0.1);
+  boat.add(cabin);
+
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.06, 1.95), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 }));
+  roof.position.set(0, 0.58, -0.1);
+  boat.add(roof);
+
+  const bLanternMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+  const bLanternMatWarm = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+  for (let z = -0.8; z <= 0.8; z += 0.32) {
+    const l1 = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), (z < 0) ? bLanternMat : bLanternMatWarm);
+    l1.position.set(-0.38, 0.55, z);
+    const l2 = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), (z < 0) ? bLanternMat : bLanternMatWarm);
+    l2.position.set(0.38, 0.55, z);
+    boat.add(l1, l2);
+  }
+
+  const boatLight = new THREE.PointLight(0xffedd5, 1.5, 6);
+  boatLight.position.set(0, 0.5, 0);
+  boat.add(boatLight);
+
+  boat.position.set(2.5, -0.05, -12);
+  boat.rotation.y = -Math.PI / 2.3;
+  return boat;
+}
+const yakatabune = createYakatabune();
+scene.add(yakatabune);
+
+// Japanese Park Deck
+function createJapaneseParkDeckTexture() {
+  const s = 512;
+  const c = document.createElement('canvas');
+  c.width = s; c.height = s;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#6b4f3b'; ctx.fillRect(0, 0, s, s);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.1)';
+  for (let i = 0; i < 1500; i++) {
+    ctx.fillRect(Math.random() * s, Math.random() * s, Math.random() * 40 + 10, 1.5);
+  }
+  ctx.strokeStyle = '#3e2a1d'; ctx.lineWidth = 3;
+  for (let y = 0; y <= s; y += 48) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(s, y); ctx.stroke();
+  }
+  for (let p = 0; p < 80; p++) {
+    const px = Math.random() * s, py = Math.random() * s;
+    ctx.fillStyle = '#fbcfe8';
+    ctx.beginPath(); ctx.ellipse(px, py, 4, 2.5, Math.random() * Math.PI, 0, Math.PI * 2); ctx.fill();
+  }
+  return c;
+}
+
+const deckTexture = new THREE.CanvasTexture(createJapaneseParkDeckTexture());
+deckTexture.wrapS = deckTexture.wrapT = THREE.RepeatWrapping;
+deckTexture.repeat.set(5, 5);
+
+const parkDeck = new THREE.Mesh(
+  new THREE.BoxGeometry(16, 0.35, 10),
+  new THREE.MeshStandardMaterial({ map: deckTexture, roughness: 0.75 })
+);
+parkDeck.position.set(0, -0.18, -1.5);
+scene.add(parkDeck);
+
+// Japanese Railing
+const woodRailingMat = new THREE.MeshStandardMaterial({ color: 0x4a2e18, roughness: 0.7 });
+const railingGroup = new THREE.Group();
+const topBar = new THREE.Mesh(new THREE.BoxGeometry(15.8, 0.08, 0.12), woodRailingMat);
+topBar.position.set(0, 0.95, -6.35);
+railingGroup.add(topBar);
+
+const midBar = new THREE.Mesh(new THREE.BoxGeometry(15.8, 0.06, 0.08), woodRailingMat);
+midBar.position.set(0, 0.5, -6.35);
+railingGroup.add(midBar);
+
+for (let rx = -7.6; rx <= 7.6; rx += 0.45) {
+  const slat = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.9, 0.045), woodRailingMat);
+  slat.position.set(rx, 0.48, -6.35);
+  railingGroup.add(slat);
+}
+scene.add(railingGroup);
+
+// Lanterns & Stone Tōrō
+function createJapaneseLantern(x, z) {
+  const g = new THREE.Group();
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 1.8, 8), new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8 }));
+  post.position.y = 0.9;
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 0.04), new THREE.MeshStandardMaterial({ color: 0x1f2937 }));
+  arm.position.set(0.15, 1.7, 0);
+  const lanternBody = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffedd5 }));
+  lanternBody.scale.set(0.85, 1.3, 0.85); lanternBody.position.set(0.3, 1.5, 0);
+  g.add(post, arm, lanternBody);
+  g.position.set(x, 0, z);
+  return g;
+}
+scene.add(createJapaneseLantern(-2.8, -2.5));
+scene.add(createJapaneseLantern(2.8, -2.5));
+
+function createStoneLantern(x, z) {
+  const g = new THREE.Group();
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.9 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.4), stoneMat); base.position.y = 0.075;
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.5, 8), stoneMat); stem.position.y = 0.4;
+  const lightBox = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.25, 0.28), new THREE.MeshBasicMaterial({ color: 0xfef08a })); lightBox.position.y = 0.72;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.18, 6), stoneMat); roof.position.y = 0.93;
+  g.add(base, stem, lightBox, roof);
+  g.position.set(x, 0, z);
+  return g;
+}
+scene.add(createStoneLantern(-2.5, -4.8));
+scene.add(createStoneLantern(2.5, -4.8));
+
+// 3D Sakura Trees & Falling Petals
+function createSakuraTree(x, z, scale, rotationY) {
+  const treeGroup = new THREE.Group();
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.9 });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 2.4, 8), trunkMat);
+  trunk.position.y = 1.2;
+  treeGroup.add(trunk);
+
+  const sakuraMat1 = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.7, side: THREE.DoubleSide });
+  const sakuraMat2 = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.8, side: THREE.DoubleSide });
+  const sakuraWhite = new THREE.MeshStandardMaterial({ color: 0xfff1f2, roughness: 0.6 });
+
+  [[0, 2.8, 0, 0.95, sakuraMat1], [-0.7, 2.5, 0.4, 0.75, sakuraMat2], [0.8, 2.6, -0.3, 0.80, sakuraMat1], [0.3, 2.4, 0.8, 0.70, sakuraWhite]].forEach(([cx, cy, cz, radius, mat]) => {
+    const cluster = new THREE.Mesh(new THREE.DodecahedronGeometry(radius, 1), mat);
+    cluster.position.set(cx, cy, cz); cluster.scale.set(1.15, 0.9, 1.1);
+    treeGroup.add(cluster);
+  });
+  treeGroup.position.set(x, 0, z); treeGroup.scale.setScalar(scale); treeGroup.rotation.y = rotationY;
+  return treeGroup;
+}
+scene.add(createSakuraTree(-4.2, -3.2, 1.35, 0.2));
+scene.add(createSakuraTree(4.2, -3.2, 1.35, 2.1));
+
+const petalCount = 70;
+const petalGroup = new THREE.Group();
+const petalGeo = new THREE.PlaneGeometry(0.035, 0.05);
+const petalMat = new THREE.MeshBasicMaterial({ color: 0xfbcfe8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+const petals = [];
+for (let i = 0; i < petalCount; i++) {
+  const p = new THREE.Mesh(petalGeo, petalMat);
+  p.position.set((Math.random() - 0.5) * 12, Math.random() * 4.5 + 0.3, (Math.random() - 0.5) * 8 - 2.5);
+  petalGroup.add(p);
+  petals.push({ mesh: p, speedY: 0.25 + Math.random() * 0.35, speedX: 0.15 + Math.random() * 0.25, rotSpeed: (Math.random() - 0.5) * 2.0 });
+}
+scene.add(petalGroup);
+
+// =========================================================================
+// ATTENDING PHYSICIAN (Dr. Tanaka)
+// =========================================================================
+const doctorGroup = new THREE.Group();
+const coatMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
+const scrubMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 });
+const skinMat = new THREE.MeshStandardMaterial({ color: 0xfcd34d, roughness: 0.6 });
+const hairMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8 });
+
+const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.72, 10), scrubMat); leftLeg.position.set(-0.1, 0.36, 0);
+const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.72, 10), scrubMat); rightLeg.position.set(0.1, 0.36, 0);
+const torsoCoat = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.22, 0.65, 12), coatMat); torsoCoat.position.set(0, 0.95, 0);
+const scrubChest = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.32, 8), scrubMat); scrubChest.position.set(0, 1.12, 0.04);
+const idBadge = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.01), new THREE.MeshBasicMaterial({ color: 0x3b82f6 })); idBadge.position.set(-0.1, 1.15, 0.18);
+
+const stethoMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.2 });
+const stethoTube = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 8, 16, Math.PI), stethoMat);
+stethoTube.rotation.x = Math.PI / 2.2; stethoTube.position.set(0, 1.22, 0.06);
+
+const doctorHead = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), skinMat); doctorHead.position.set(0, 1.40, 0);
+const doctorHair = new THREE.Mesh(new THREE.SphereGeometry(0.118, 14, 14), hairMat); doctorHair.position.set(0, 1.43, -0.015);
+const mask = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.05), new THREE.MeshBasicMaterial({ color: 0xbae6fd })); mask.position.set(0, 1.36, 0.09);
+
+const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.42, 8), coatMat); leftArm.position.set(-0.21, 0.98, 0.06); leftArm.rotation.set(0.7, 0, 0.35);
+const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.42, 8), coatMat); rightArm.position.set(0.21, 0.98, 0.06); rightArm.rotation.set(0.7, 0, -0.35);
+
+const clipboard = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.30, 0.018), new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }));
+clipboard.position.set(0, 0.98, 0.22); clipboard.rotation.x = -0.45;
+const clipPaper = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.24), new THREE.MeshBasicMaterial({ color: 0xffffff })); clipPaper.position.set(0, 0, 0.012); clipboard.add(clipPaper);
+
+doctorGroup.add(leftLeg, rightLeg, torsoCoat, scrubChest, idBadge, stethoTube, doctorHead, doctorHair, mask, leftArm, rightArm, clipboard);
+doctorGroup.position.set(0.58, 0, -1.35);
+doctorGroup.rotation.y = -0.35;
+scene.add(doctorGroup);
+
+// =========================================================================
+// EVIDENCE-BASED OSTEOARTHRITIS REHABILITATION GUIDANCE (OARSI / AAOS / APTA)
+// =========================================================================
+
+// Ergonomic Seated Chair
+const chairMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 0.55), chairMat);
+chairSeat.position.set(0, 0.45, -0.9);
+const chairBack = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.65, 0.05), chairMat);
+chairBack.position.set(0, 0.78, -0.63);
+scene.add(chairSeat, chairBack);
+
+// Anatomical Hip Pivot (Acetabulofemoral articulation)
+const hipJointPivot = new THREE.Group();
+hipJointPivot.position.set(-0.16, 0.48, -0.82);
+scene.add(hipJointPivot);
+
+const thighMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.35 });
+const demoThigh = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.40, 14), thighMat);
+demoThigh.rotation.x = Math.PI / 2;
+demoThigh.position.set(0, 0, 0.20);
+hipJointPivot.add(demoThigh);
+
+const kneeJoint = new THREE.Group();
+kneeJoint.position.set(0, 0, 0.40);
+hipJointPivot.add(kneeJoint);
+
+const kneeCap = new THREE.Mesh(new THREE.SphereGeometry(0.058, 12, 12), new THREE.MeshStandardMaterial({ color: 0x38bdf8 }));
+kneeJoint.add(kneeCap);
+
+const lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.042, 0.40, 12), thighMat);
+lowerLeg.position.set(0, -0.20, 0);
+kneeJoint.add(lowerLeg);
+
+const foot = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.18), new THREE.MeshStandardMaterial({ color: 0x0369a1 }));
+foot.position.set(0, -0.42, 0.05);
+kneeJoint.add(foot);
+
+// CLINICAL REHAB TARGET ARCH (Therapeutic Window: ~30° Elevation, Safe ROM)
+const targetGroup = new THREE.Group();
+targetGroup.position.set(0.16, 0.48, -0.82);
+scene.add(targetGroup);
+
+const targetBoxGeo = new THREE.BoxGeometry(0.20, 0.14, 0.46);
+const targetBoxMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, wireframe: true });
+const targetBox = new THREE.Mesh(targetBoxGeo, targetBoxMat);
+targetBox.position.set(0, 0.14, 0.22);
+targetGroup.add(targetBox);
+
+const targetGlowMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.20 });
+const targetGlow = new THREE.Mesh(targetBoxGeo, targetGlowMat);
+targetGlow.position.copy(targetBox.position);
+targetGroup.add(targetGlow);
+
+const tracker = new THREE.Mesh(
+  new THREE.SphereGeometry(0.065, 18, 18),
+  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.5 })
+);
+tracker.position.set(0.16, 0.48, -0.45);
+scene.add(tracker);
+
+// =========================================================================
+// CLINICAL TELE-REHAB HUD (Evidence-Based Guidelines Display)
+// =========================================================================
+const hudCanvas = document.createElement('canvas');
+hudCanvas.width = 1024; hudCanvas.height = 460;
+const hudCtx = hudCanvas.getContext('2d');
+
+function updateClinicalHUD(phaseName, phaseInstruction, clinicalTip, inTargetZone, holdTimer) {
+  hudCtx.clearRect(0, 0, 1024, 460);
+
+  hudCtx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+  hudCtx.strokeStyle = inTargetZone ? '#10b981' : (phaseName.includes('HOLD') ? '#f59e0b' : '#38bdf8');
+  hudCtx.lineWidth = 6;
+  hudCtx.roundRect(40, 25, 944, 405, 28);
+  hudCtx.fill();
+  hudCtx.stroke();
+
+  hudCtx.fillStyle = '#f8fafc';
+  hudCtx.font = 'bold 38px -apple-system, sans-serif';
+  hudCtx.fillText("🏥 OARSI Protocol • Seated Hip Osteoarthritis Rehab", 80, 85);
+
+  hudCtx.fillStyle = '#94a3b8';
+  hudCtx.font = '24px -apple-system, sans-serif';
+  hudCtx.fillText("Low-Impact Isometric Stabilization & Safe Range-of-Motion (ROM)", 80, 125);
+
+  hudCtx.fillStyle = inTargetZone ? '#10b981' : '#38bdf8';
+  hudCtx.font = 'bold 36px -apple-system, sans-serif';
+  hudCtx.fillText(`PHASE: ${phaseName}`, 80, 195);
+
+  if (phaseName === 'ISOMETRIC HOLD') {
+    hudCtx.fillStyle = '#e2e8f0';
+    hudCtx.font = 'bold 28px -apple-system, sans-serif';
+    hudCtx.fillText(`HOLD STABILIZATION: ${holdTimer.toFixed(1)}s / 3.0s`, 460, 195);
+
+    hudCtx.fillStyle = '#334155';
+    hudCtx.roundRect(460, 215, 460, 18, 9);
+    hudCtx.fill();
+
+    const progressWidth = Math.min(460, (holdTimer / 3.0) * 460);
+    hudCtx.fillStyle = inTargetZone ? '#10b981' : '#f59e0b';
+    hudCtx.roundRect(460, 215, progressWidth, 18, 9);
+    hudCtx.fill();
+  }
+
+  hudCtx.fillStyle = inTargetZone ? '#34d399' : '#f8fafc';
+  hudCtx.font = 'bold 38px -apple-system, sans-serif';
+  hudCtx.fillText(phaseInstruction, 80, 285);
+
+  hudCtx.fillStyle = '#cbd5e1';
+  hudCtx.font = '25px -apple-system, sans-serif';
+  hudCtx.fillText(`💡 Guidance: ${clinicalTip}`, 80, 350);
+
+  hudCtx.fillStyle = '#64748b';
+  hudCtx.font = '22px -apple-system, sans-serif';
+  hudCtx.fillText("Keep lumbar spine flat against chair back. Avoid hip adduction or twisting.", 80, 395);
+}
+
+const hudTexture = new THREE.CanvasTexture(hudCanvas);
+updateClinicalHUD("CONCENTRIC LIFT", "Smoothly lift right thigh ~15cm towards yellow target", "Engage iliopsoas & rectus femoris gently", false, 0);
+
+const hudPanel = new THREE.Mesh(
+  new THREE.PlaneGeometry(1.65, 0.74),
+  new THREE.MeshBasicMaterial({ map: hudTexture, transparent: true })
+);
+hudPanel.position.set(-0.35, 1.9, -2.1);
+scene.add(hudPanel);
+
+const controller = renderer.xr.getController(0);
+scene.add(controller);
+controller.addEventListener('connected', (e) => {
+  logDebug("Controller Linked: " + (e.data.handedness || "hand"));
+});
+
+// =========================================================================
+// REAL-TIME BIOMECHANICAL CYCLE & RENDER LOOP
+// Cycle timing:
+// - 0.0s to 2.2s: Concentric Lift (0 deg -> 32 deg)
+// - 2.2s to 5.2s: Isometric Hold (3.0s therapeutic duration)
+// - 5.2s to 7.4s: Eccentric Lowering (32 deg -> 0 deg)
+// - 7.4s to 8.6s: Rest Phase (1.2s relaxation)
+// Total Cycle = 8.6 seconds
+// =========================================================================
+const CYCLE_DURATION = 8.6;
+const clock = new THREE.Clock();
+let holdTimer = 0;
+let lastPhase = "";
+let lastZoneState = false;
+
+function renderScene() {
+  const delta = clock.getDelta();
+  const t = clock.getElapsedTime();
+
+  // Doctor breathing and nodding
+  doctorGroup.position.y = Math.sin(t * 1.8) * 0.008;
+  doctorHead.rotation.x = Math.sin(t * 1.5) * 0.04;
+  leftArm.rotation.x = 0.7 + Math.sin(t * 1.2) * 0.02;
+
+  yakatabune.position.y = -0.05 + Math.sin(t * 1.4) * 0.03;
+
+  petals.forEach(p => {
+    p.mesh.position.y -= p.speedY * delta;
+    p.mesh.position.x += p.speedX * delta;
+    p.mesh.rotation.x += p.rotSpeed * delta;
+    if (p.mesh.position.y < 0) {
+      p.mesh.position.y = 4.2;
+      p.mesh.position.x = (Math.random() - 0.5) * 12;
+      p.mesh.position.z = (Math.random() - 0.5) * 8 - 2.5;
+    }
+  });
+
+  riverTexture.offset.x = (t * 0.012) % 1.0;
+
+  // BIOMECHANICALLY PRECISE CLINICAL CADENCE
+  const cycleTime = t % CYCLE_DURATION;
+  let currentFlexionRad = 0;
+  let phaseName = "";
+  let phaseInstruction = "";
+  let clinicalTip = "";
+
+  if (cycleTime < 2.2) {
+    const p = cycleTime / 2.2;
+    currentFlexionRad = -Math.sin(p * Math.PI * 0.5) * 0.56;
+    phaseName = "CONCENTRIC LIFT (2.0s)";
+    phaseInstruction = "Slowly elevate knee ~15cm toward target";
+    clinicalTip = "Exhale as you lift; avoid leaning your torso backward";
+    holdTimer = 0;
+  } else if (cycleTime < 5.2) {
+    currentFlexionRad = -0.56;
+    phaseName = "ISOMETRIC HOLD";
+    holdTimer = cycleTime - 2.2;
+    phaseInstruction = "Hold elevation steady — do NOT hold your breath";
+    clinicalTip = "Feel anterior thigh activate; stabilize pelvis evenly";
+  } else if (cycleTime < 7.4) {
+    const p = (cycleTime - 5.2) / 2.2;
+    currentFlexionRad = -0.56 * Math.cos(p * Math.PI * 0.5);
+    phaseName = "CONTROLLED LOWERING (2.0s)";
+    phaseInstruction = "Lower leg smoothly with muscular control";
+    clinicalTip = "Inhale slowly; protect joint from sudden dropping";
+    holdTimer = 0;
+  } else {
+    currentFlexionRad = 0;
+    phaseName = "REST & RESET (1.2s)";
+    phaseInstruction = "Rest foot flat on deck — relax quadriceps";
+    clinicalTip = "Take a full recovery breath before next repetition";
+    holdTimer = 0;
+  }
+
+  hipJointPivot.rotation.x = currentFlexionRad;
+
+  targetBox.position.y = 0.04 - currentFlexionRad * 0.32;
+  targetGlow.position.copy(targetBox.position);
+
+  tracker.position.copy(controller.position);
+
+  const dy = Math.abs(tracker.position.y - (0.48 + targetBox.position.y));
+  const dx = Math.abs(tracker.position.x - 0.16);
+  const inTargetZone = dy < 0.08 && dx < 0.14;
+
+  if (inTargetZone) {
+    targetBox.material.color.set(0x10b981);
+    targetGlow.material.color.set(0x10b981);
+    targetGlow.material.opacity = 0.42;
+  } else {
+    targetBox.material.color.set(0xfacc15);
+    targetGlow.material.color.set(0xfacc15);
+    targetGlow.material.opacity = 0.20;
+  }
+
+  const hudNeedsRefresh = (phaseName !== lastPhase) || (inTargetZone !== lastZoneState) || (phaseName === 'ISOMETRIC HOLD');
+  if (hudNeedsRefresh) {
+    updateClinicalHUD(phaseName, phaseInstruction, clinicalTip, inTargetZone, holdTimer);
+    hudTexture.needsUpdate = true;
+    lastPhase = phaseName;
+    lastZoneState = inTargetZone;
+  }
+
+  renderer.render(scene, camera);
+}
+
+renderer.setAnimationLoop(renderScene);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
