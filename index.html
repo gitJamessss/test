@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hip OA VR Exercise Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; overflow: hidden; font-family: system-ui, sans-serif; }
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.4);
+      color: #fff;
+      font-size: 14px;
+      z-index: 10;
+    }
+    #debug {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.6);
+      color: #0f0;
+      font-size: 11px;
+      z-index: 10;
+      white-space: pre-line;
+    }
+    a { color: #0ff; }
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    <div><b>Hip OA VR Exercise Demo</b> – Standalone WebXR app for Meta Quest 3.</div>
+    <div>
+      Steps: 1) Host this file on HTTPS (e.g., GitHub Pages). 2) Open in Quest browser. 3) Tap the 
+      <b>Enter VR</b> button that appears in the bottom-right corner.
+    </div>
+    <div>
+      Concept: Guided seated hip flexion exercise with yellow leg target outline and simple gamified feedback.
+    </div>
+  </div>
+  <div id="debug"></div>
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
+    import { VRButton } from "https://unpkg.com/three@0.165.0/examples/jsm/webxr/VRButton.js";
+
+    const debugEl = document.getElementById('debug');
+    function logDebug(msg) {
+      console.log(msg);
+      debugEl.textContent += "\n" + msg;
+    }
+
+    // Basic HTTPS / WebXR diagnostics
+    const isSecureContext = window.isSecureContext;
+    logDebug("Secure context (HTTPS/localhost) = " + isSecureContext);
+    if (!isSecureContext) {
+      logDebug("WARNING: WebXR requires HTTPS or localhost. Host this file via GitHub Pages or similar.");
+    }
+
+    if (!('xr' in navigator)) {
+      logDebug("navigator.xr NOT found – WebXR not available in this browser.");
+    } else {
+      logDebug("navigator.xr found – checking immersive-vr support...");
+      navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+        logDebug("immersive-vr supported = " + supported);
+      }).catch(err => {
+        logDebug("Error checking isSessionSupported: " + err);
+      });
+    }
+
+    // Three.js scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x202840);
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+    // Seated-first design: camera at ~1.4m height
+    camera.position.set(0, 1.4, 0.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    document.body.appendChild(VRButton.createButton(renderer));
+
+    // Lighting
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+    hemiLight.position.set(0, 2, 0);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight.position.set(1, 2, 1);
+    scene.add(dirLight);
+
+    // Simple environment: floor + wall for spatial reference
+    const floorGeo = new THREE.PlaneGeometry(8, 8);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x303030 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    scene.add(floor);
+
+    const wallGeo = new THREE.PlaneGeometry(8, 3);
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x222633 });
+    const wall = new THREE.Mesh(wallGeo, wallMat);
+    wall.position.set(0, 1.5, -3);
+    scene.add(wall);
+
+    // Virtual guide: seat & yellow leg placement outline
+    const seatGeo = new THREE.BoxGeometry(0.5, 0.05, 0.5);
+    const seatMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+    const seat = new THREE.Mesh(seatGeo, seatMat);
+    seat.position.set(0, 0.45, -1);
+    scene.add(seat);
+
+    // Leg target: translucent yellow box + wireframe outline
+    const legTargetGeo = new THREE.BoxGeometry(0.2, 0.1, 0.5);
+    const legTargetMat = new THREE.MeshStandardMaterial({ color: 0xffff00, transparent: true, opacity: 0.35 });
+    const legTarget = new THREE.Mesh(legTargetGeo, legTargetMat);
+    legTarget.position.set(0.15, 0.5, -0.7);
+    scene.add(legTarget);
+
+    const legOutlineGeo = new THREE.EdgesGeometry(legTargetGeo);
+    const legOutlineMat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 2 });
+    const legOutline = new THREE.LineSegments(legOutlineGeo, legOutlineMat);
+    legOutline.position.copy(legTarget.position);
+    scene.add(legOutline);
+
+    // Virtual demonstration: simple avatar leg lifting motion (box representing thigh)
+    const thighGeo = new THREE.BoxGeometry(0.15, 0.1, 0.4);
+    const thighMat = new THREE.MeshStandardMaterial({ color: 0x00aaff });
+    const avatarThigh = new THREE.Mesh(thighGeo, thighMat);
+    avatarThigh.position.set(-0.15, 0.5, -0.7);
+    scene.add(avatarThigh);
+
+    // Controller sphere (represents patient's leg tracker)
+    const trackerGeo = new THREE.SphereGeometry(0.06, 24, 24);
+    const trackerMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const tracker = new THREE.Mesh(trackerGeo, trackerMat);
+    tracker.position.set(0.0, 0.4, -0.9);
+    scene.add(tracker);
+
+    // Text panel above showing reps & score
+    const hudCanvas = document.createElement('canvas');
+    hudCanvas.width = 512;
+    hudCanvas.height = 256;
+    const hudCtx = hudCanvas.getContext('2d');
+
+    function drawHUD(reps, score) {
+      hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
+      hudCtx.fillStyle = '#000000';
+      hudCtx.globalAlpha = 0.6;
+      hudCtx.fillRect(0, 0, hudCanvas.width, hudCanvas.height);
+      hudCtx.globalAlpha = 1.0;
+      hudCtx.fillStyle = '#ffffff';
+      hudCtx.font = '32px sans-serif';
+      hudCtx.fillText('Hip OA VR Exercise', 20, 60);
+      hudCtx.font = '26px sans-serif';
+      hudCtx.fillText('Reps: ' + reps, 20, 120);
+      hudCtx.fillText('Score: ' + score, 20, 160);
+      hudCtx.font = '20px sans-serif';
+      hudCtx.fillText('Follow the blue leg demo. Keep your leg inside the yellow outline.', 20, 210);
+    }
+
+    const hudTexture = new THREE.CanvasTexture(hudCanvas);
+    const hudMat = new THREE.MeshBasicMaterial({ map: hudTexture, transparent: true });
+    const hudGeo = new THREE.PlaneGeometry(1.8, 0.9);
+    const hudMesh = new THREE.Mesh(hudGeo, hudMat);
+    hudMesh.position.set(0, 2.0, -2.5);
+    scene.add(hudMesh);
+
+    let reps = 0;
+    let score = 0;
+    drawHUD(reps, score);
+
+    // Animation parameters
+    let clock = new THREE.Clock();
+    let inTarget = false;
+    let timeInTarget = 0;
+
+    // Controller reference
+    const controller = renderer.xr.getController(0);
+    scene.add(controller);
+
+    controller.addEventListener('connected', (event) => {
+      logDebug('Controller connected: ' + JSON.stringify(event.data));
+    });
+
+    controller.addEventListener('disconnected', () => {
+      logDebug('Controller disconnected');
+    });
+
+    // Animate loop
+    function animate() {
+      renderer.setAnimationLoop(renderScene);
+    }
+
+    function renderScene() {
+      const t = clock.getElapsedTime();
+
+      // Avatar thigh lifting motion (simulated hip flexion)
+      const lift = Math.sin(t * 1.5) * 0.15; // small up-down motion
+      avatarThigh.position.y = 0.5 + lift;
+
+      // Move leg target slightly with the avatar to simulate dynamic guidance
+      legTarget.position.y = 0.5 + lift * 0.6;
+      legOutline.position.copy(legTarget.position);
+
+      // Use controller position as patient "leg tracker" proxy
+      tracker.position.copy(controller.position);
+
+      // Check if tracker is inside leg target box
+      const dx = Math.abs(tracker.position.x - legTarget.position.x);
+      const dy = Math.abs(tracker.position.y - legTarget.position.y);
+      const dz = Math.abs(tracker.position.z - legTarget.position.z);
+      const inside = (dx <= 0.1 && dy <= 0.05 && dz <= 0.25);
+
+      if (inside) {
+        // Change outline to green when positioned correctly
+        legOutline.material.color.set(0x00ff00);
+        legTarget.material.color.set(0x00ff00);
+        legTarget.material.opacity = 0.5;
+
+        timeInTarget += clock.getDelta();
+        if (!inTarget) {
+          inTarget = True;
+        }
+        // Count rep if maintained for > 1.2s
+        if (timeInTarget >= 1.2) {
+          reps += 1;
+          score += 10;
+          timeInTarget = 0;
+          drawHUD(reps, score);
+        }
+      } else {
+        legOutline.material.color.set(0xffff00);
+        legTarget.material.color.set(0xffff00);
+        legTarget.material.opacity = 0.35;
+        inTarget = false;
+        timeInTarget = 0;
+        clock.getDelta(); // consume delta
+      }
+
+      hudTexture.needsUpdate = True;
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
